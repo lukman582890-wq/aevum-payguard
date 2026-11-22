@@ -1,0 +1,14 @@
+{
+  "name": "aevum-payguard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Scoped-budget agentic invoice & Confirmation-of-Payee tUSD8 payments on QDay Aevum Testnet",
+  "scripts": {
+    "compile": "node scripts/compile_and_verify.mjs",
+    "serve": "python -m http.server 8088 --directory web"
+  },
+  "dependencies": {
+    "solc": "^0.8.24"
+  }
+}

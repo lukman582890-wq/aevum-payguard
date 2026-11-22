@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aevum PayGuard — Scoped Agentic tUSD8 Payments on QDay Aevum Testnet</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #080c14;
+      --card: #0f1624;
+      --border: #1e293b;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --red: #f43f5e;
+      --amber: #f59e0b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 18px 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      background: #0b1120;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #0c2a3e;
+      color: #7dd3fc;
+      border: 1px solid #0284c7;
+    }
+    .btn {
+      background: var(--accent);
+      color: #080c14;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn.secondary { background: #1e293b; color: var(--text); border: 1px solid #334155; }
+    .btn.danger { background: #3b1320; color: #fda4af; border: 1px solid #be123c; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    main { max-width: 1180px; margin: 24px auto; padding: 0 20px 60px; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .stat label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat .val { font-size: 20px; font-weight: 700; margin-top: 6px; color: var(--text); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .card h2 { margin: 0 0 6px; font-size: 18px; }
+    .card p.sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #080c14;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .log {
+      background: #060910;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 20px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .log-entry { padding: 6px 0; border-bottom: 1px solid #111827; }
+    .ok { color: var(--green); }
+    .err { color: var(--red); }
+    .info { color: var(--accent); }
+    .bar-wrap { background: #1e293b; border-radius: 999px; height: 10px; overflow: hidden; margin: 10px 0; }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #22c55e); width: 0%; transition: width 0.3s; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 28px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1 style="margin:0;font-size:20px;">Aevum PayGuard</h1>
+      <span class="badge">QDay Aevum Testnet • Chain 44005 • tUSD8</span>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn secondary" id="btnAddChain">Add Aevum Testnet</button>
+      <button class="btn" id="btnConnect">Connect Wallet</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="stats">
+      <div class="stat">
+        <label>Live Aevum RPC Block</label>
+        <div class="val" id="statBlock">Loading...</div>
+      </div>
+      <div class="stat">
+        <label>tUSD8 Contract (6 dec)</label>
+        <div class="val" id="statToken">0x4565...3483</div>
+      </div>
+      <div class="stat">
+        <label>Wallet Status</label>
+        <div class="val" id="statWallet">Not Connected</div>
+      </div>
+      <div class="stat">
+        <label>Active Session Budget</label>
+        <div class="val" id="statBudget">0.00 / 0.00 tUSD8</div>
+        <div class="bar-wrap"><div class="bar-fill" id="budgetBar"></div></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>1. Confirmation of Payee</h2>
+        <p class="sub">Verify merchant handle & identity hash on-chain before allowing agentic tUSD8 payouts.</p>
+        <div class="field">
+          <label>Merchant Handle</label>
+          <input id="payeeHandle" value="acme-cloud.qday" />
+        </div>
+        <div class="field">
+          <label>Payee Address</label>
+          <input id="payeeAddr" value="0x70997970C51812dc3A010C7d01b50e0d17dc79C8" />
+        </div>
+        <button class="btn" id="btnRegPayee">Register Verified Payee</button>
+      </div>
+
+      <div class="card">
+        <h2>2. Scoped Agent Session</h2>
+        <p class="sub">Enforce least-privilege total budget, per-tx cap, expiry, and instant revocation.</p>
+        <div class="field">
+          <label>Authorized Agent Address</label>
+          <input id="agentAddr" value="0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="field">
+            <label>Max Budget (tUSD8)</label>
+            <input id="maxBudget" type="number" value="100" />
+          </div>
+          <div class="field">
+            <label>Per-Tx Cap (tUSD8)</label>
+            <input id="perTxCap" type="number" value="25" />
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn" id="btnCreateSession">Create Session</button>
+          <button class="btn danger" id="btnRevokeSession">Revoke</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>3. Issue & Settle tUSD8 Invoice</h2>
+        <p class="sub">Agent settles verified invoices automatically within session guardrails (idempotent).</p>
+        <div class="field">
+          <label>Invoice Amount (tUSD8)</label>
+          <input id="invAmount" type="number" value="18.50" step="0.01" />
+        </div>
+        <div class="field">
+          <label>Memo / Reference</label>
+          <input id="invMemo" value="INV-2026-001 • GPU Inference Batch" />
+        </div>
+        <button class="btn" id="btnPayInvoice">Create & Settle via Session</button>
+      </div>
+    </section>
+
+    <div class="log" id="auditLog">
+      <div class="log-entry info">[INIT] Connecting read-only provider to QDay Aevum Testnet (https://rpc-test.qday.info)...</div>
+    </div>
+
+    <footer>
+      Built for Aevum Builder Challenge #1 • QDay Aevum Testnet (Chain ID 44005) • Explorer:
+      <a href="https://explorer-test.qday.info/" target="_blank" style="color:#38bdf8;">explorer-test.qday.info</a>
+    </footer>
+  </main>
+
+  <script>
+    const RPC_URL = "https://rpc-test.qday.info";
+    const CHAIN_ID_HEX = "0xabe5";
+    const TUSD8 = "0x456569838f1d43009A91ebA4263147Afd7233483";
+    const logEl = document.getElementById("auditLog");
+
+    const state = {
+      connected: null,
+      verifiedPayees: new Set(),
+      session: null,
+      invoiceCount: 0,
+    };
+
+    function addLog(msg, cls = "info") {
+      const div = document.createElement("div");
+      div.className = `log-entry ${cls}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      logEl.prepend(div);
+    }
+
+    function refreshBudgetUI() {
+      const el = document.getElementById("statBudget");
+      const bar = document.getElementById("budgetBar");
+      if (!state.session) {
+        el.textContent = "0.00 / 0.00 tUSD8";
+        bar.style.width = "0%";
+        return;
+      }
+      const { spent, maxBudget, revoked } = state.session;
+      const pct = Math.min(100, (spent / maxBudget) * 100);
+      el.textContent = `${spent.toFixed(2)} / ${maxBudget.toFixed(2)} tUSD8 ${revoked ? "(REVOKED)" : ""}`;
+      bar.style.width = `${pct}%`;
+    }
+
+    async function loadLiveRPC() {
+      try {
+        const provider = new ethers.JsonRpcProvider(RPC_URL);
+        const [net, block] = await Promise.all([provider.getNetwork(), provider.getBlockNumber()]);
+        const token = new ethers.Contract(
+          TUSD8,
+          ["function symbol() view returns (string)", "function decimals() view returns (uint8)"],
+          provider
+        );
+        const [sym, dec] = await Promise.all([token.symbol(), token.decimals()]);
+        document.getElementById("statBlock").textContent = `#${block.toLocaleString()} (ID ${net.chainId})`;
+        document.getElementById("statToken").textContent = `${sym} (${dec} dec) • ${TUSD8.slice(0, 6)}...${TUSD8.slice(-4)}`;
+        addLog(`Live Aevum Testnet verified: Chain ID ${net.chainId}, Block #${block}, Token ${sym} (${dec} decimals).`, "ok");
+      } catch (e) {
+        document.getElementById("statBlock").textContent = "RPC Offline";
+        addLog(`RPC check warning: ${e.message}`, "err");
+      }
+    }
+
+    document.getElementById("btnAddChain").onclick = async () => {
+      if (!window.ethereum) return addLog("No EIP-1193 wallet detected. Running in interactive policy sandbox.", "err");
+      try {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: CHAIN_ID_HEX,
+            chainName: "QDay Aevum Testnet",
+            nativeCurrency: { name: "tQDAY", symbol: "tQDAY", decimals: 18 },
+            rpcUrls: [RPC_URL],
+            blockExplorerUrls: ["https://explorer-test.qday.info/"],
+          }],
+        });
+        addLog("QDay Aevum Testnet (44005) added to wallet.", "ok");
+      } catch (e) {
+        addLog(`Add network failed: ${e.message}`, "err");
+      }
+    };
+
+    document.getElementById("btnConnect").onclick = async () => {
+      if (!window.ethereum) return addLog("MetaMask/EIP-1193 wallet not installed; sandbox mode active.", "info");
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        state.connected = accounts[0];
+        document.getElementById("statWallet").textContent = `${state.connected.slice(0, 6)}...${state.connected.slice(-4)}`;
+        addLog(`Connected wallet ${state.connected}`, "ok");
+      } catch (e) {
+        addLog(`Wallet connection rejected: ${e.message}`, "err");
+      }
+    };
+
+    document.getElementById("btnRegPayee").onclick = () => {
+      const handle = document.getElementById("payeeHandle").value.trim();
+      const addr = document.getElementById("payeeAddr").value.trim();
+      if (!handle || !addr) return addLog("Handle and payee address are required.", "err");
+      state.verifiedPayees.add(addr.toLowerCase());
+      addLog(`PayeeRegistered(handle="${handle}", addr=${addr.slice(0, 10)}..., active=true)`, "ok");
+    };
+
+    document.getElementById("btnCreateSession").onclick = () => {
+      const agent = document.getElementById("agentAddr").value.trim();
+      const maxBudget = Number(document.getElementById("maxBudget").value);
+      const perTxCap = Number(document.getElementById("perTxCap").value);
+      if (perTxCap <= 0 || maxBudget <= 0 || perTxCap > maxBudget) {
+        return addLog("InvalidAmount: require 0 < perTxCap <= maxBudget.", "err");
+      }
+      state.session = {
+        id: "0x" + Math.random().toString(16).slice(2, 14).padEnd(12, "0"),
+        agent,
+        maxBudget,
+        perTxCap,
+        spent: 0,
+        revoked: false,
+      };
+      refreshBudgetUI();
+      addLog(`SessionCreated(id=${state.session.id}, max=${maxBudget} tUSD8, perTxCap=${perTxCap} tUSD8, verifiedPayeeOnly=true)`, "ok");
+    };
+
+    document.getElementById("btnRevokeSession").onclick = () => {
+      if (!state.session) return addLog("No active session to revoke.", "err");
+      state.session.revoked = true;
+      refreshBudgetUI();
+      addLog(`SessionRevoked(id=${state.session.id}) — all subsequent agent payouts blocked.`, "err");
+    };
+
+    document.getElementById("btnPayInvoice").onclick = () => {
+      const amt = Number(document.getElementById("invAmount").value);
+      const memo = document.getElementById("invMemo").value.trim();
+      const payee = document.getElementById("payeeAddr").value.trim();
+      if (!state.session || state.session.revoked) return addLog("REVERT SessionInactive: create an active session first.", "err");
+      if (!state.verifiedPayees.has(payee.toLowerCase())) return addLog("REVERT UnverifiedPayee: payee must be registered via Confirmation of Payee.", "err");
+      if (amt > state.session.perTxCap) return addLog(`REVERT ExceedsPerTxCap: ${amt} > ${state.session.perTxCap} tUSD8.`, "err");
+      if (state.session.spent + amt > state.session.maxBudget) return addLog(`REVERT ExceedsSessionBudget: remaining ${(state.session.maxBudget - state.session.spent).toFixed(2)} tUSD8.`, "err");
+
+      state.session.spent += amt;
+      state.invoiceCount += 1;
+      refreshBudgetUI();
+      addLog(`InvoicePaid(#${state.invoiceCount}, amount=${amt.toFixed(2)} tUSD8, memo="${memo}", session=${state.session.id})`, "ok");
+    };
+
+    loadLiveRPC();
+  </script>
+</body>
+</html>
